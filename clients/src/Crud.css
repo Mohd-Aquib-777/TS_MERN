@@ -1,0 +1,7 @@
+.formError{
+    font-size: 13px
+}
+
+.errorColor{
+    border-color: rgb(241, 105, 105)!important;
+}
