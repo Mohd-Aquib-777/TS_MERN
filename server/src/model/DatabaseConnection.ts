@@ -1,29 +1,34 @@
-import { DataSource } from "typeorm"
+import { DataSource } from 'typeorm'
+import path from 'path'
+class DatabaseConnection {
+    public myDataSource: DataSource
 
-class DatabaseConnection{
-    public myDataSource:DataSource;
-
-    constructor(type:any, host:string, port:number, database:string){
-        
+    constructor (type: any, host: any, port: any, database: any) {
         this.myDataSource = new DataSource({
-            type: type,
-            host: host,
-            port: port,
-            database: database,
+            type,
+            host,
+            port,
+            database,
+            name: 'default',
+            entities: [
+                path.join(__dirname, '/*.entity.ts')
+            ],
+            logging: true,
+            synchronize: true
         })
-        
         this.myDataSource.initialize().then(() => {
-            console.log("Data Source has been initialized!")
+            console.log(__dirname, 'Database is connected')
         })
         .catch((err) => {
-            console.error("Error during Data Source initialization:", err)
+            console.error('Error during Data Source initialization(Database connection):', err)
         })
     }
-    public getDbConnetion(){
-        return this.myDataSource;
+
+    public getDbConnetion (): any {
+        return this.myDataSource
     }
 }
 
-var dbConnection:DatabaseConnection = new DatabaseConnection("mongodb","localhost",27017,"user");
-var db = dbConnection.getDbConnetion();
-export {db}
+const dbConnection: DatabaseConnection = new DatabaseConnection(process.env.TYPE, process.env.HOST, process.env.DB_PORT, process.env.DB_NAME)
+const db = dbConnection.getDbConnetion()
+export { db }
