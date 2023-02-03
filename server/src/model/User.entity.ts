@@ -26,6 +26,9 @@ class User extends BaseEntity {
     @Column()
     profilePic: string
 
+    @Column()
+    detail: string
+
     @CreateDateColumn({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP(6)' })
     created_at: Date
 

@@ -1,15 +1,35 @@
 import { user } from '../dao/User'
 import { HTTP_CODES } from '../constants/RequestConstants'
 import { Request as req, Response as res } from 'express'
+import UploadedOnLocal from '../helper/upload'
+import { userSchema } from '../validationSchemas/UserSchema'
+import { logger } from '../logger/index'
+import { unlink } from 'fs'
+import path from 'path'
 
 class UserController {
+    public throwErr (): never {
+        throw new Error('Something went wrong')
+    }
+
     public async addUser (req: req, res: res): Promise<void> {
         try {
-            const result = await user.saveUser(req.body)
+            // eslint-disable-next-line @typescript-eslint/no-confusing-void-expression
+            const value = userSchema.checkValidatidy(req.body)
+            console.log('vlidation', value)
+            if (req.files != null) {
+                const fileUploadObj = new UploadedOnLocal()
+                const fileName = fileUploadObj.uploadFile(req.files)
+                req.body.profilePic = fileName
+            } else {
+                delete req.body.profilePic
+            }
+            // this.throwErr()
+            await user.saveUser(req.body)
             res.status(HTTP_CODES.OK).send({ status: true, message: 'Data has been added successfully' })
         } catch (error) {
-            console.log('ERROR:', error)
             res.status(HTTP_CODES.INTERNAL_SERVER_ERROR).send({ status: false, message: 'Internal server error' })
+            logger.createLogs(error)
         }
     }
 
@@ -18,33 +38,42 @@ class UserController {
             const userData = await user.getUserData()
             res.status(HTTP_CODES.OK).send({ data: userData })
         } catch (error) {
-          console.log('ERROR:', error)
+            logger.createLogs(error)
           res.status(HTTP_CODES.INTERNAL_SERVER_ERROR).send({ status: false, message: 'Internal server error' })
         }
     }
 
     public async updateData (req: req, res: res): Promise<void> {
+        let fileName: string = ''
         try {
-            const result = await user.updateData(req.body.id, req.body)
+            if (req.files != null) {
+                const fileUploadObj = new UploadedOnLocal()
+                fileName = await fileUploadObj.uploadFile(req.files)
+                req.body.profilePic = fileName
+            } else {
+                delete req.body.profilePic
+            }
+            // this.throwErr()
+            await user.updateData(req.body.id, req.body)
             res.status(HTTP_CODES.OK).send({ status: true, message: 'Data has been updated successfully' })
         } catch (error) {
-            console.log('ERROR: ', error)
+            logger.createLogs(error)
             res.status(HTTP_CODES.INTERNAL_SERVER_ERROR).send({ status: false, message: 'Internal server error' })
+            if (fileName.length > 0) {
+                const filePath = path.resolve(__dirname, '../upload', fileName)
+                console.log('=======filePath=========', filePath)
+                unlink(filePath, (error) => { console.log(error) })
+            }
         }
     }
 
     public async deleteData (req: req, res: res): Promise<void> {
         try {
-            console.log('====================')
-            console.log('query data ', req.params)
-            const result = await user.deleteData(req.params.id)
-            // if (result.result.ok) {
-                res.status(HTTP_CODES.OK).send({ status: true, message: 'Data has been deleted successfully' })
-            // } else {
-                // res.status(HTTP_CODES.NOT_FOUND).send({ message: 'NOT_FOUND' })
-            // }
+            await user.deleteData(req.params.id)
+
+            res.status(HTTP_CODES.OK).send({ status: true, message: 'Data has been deleted successfully' })
         } catch (error) {
-            console.log('ERROR: ', error)
+            logger.createLogs(error)
             res.status(HTTP_CODES.INTERNAL_SERVER_ERROR).send({ status: false, message: 'Internal server error' })
         }
     }

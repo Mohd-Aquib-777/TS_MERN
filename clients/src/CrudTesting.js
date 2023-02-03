@@ -1,3 +1,5 @@
+/* eslint-disable jsx-a11y/alt-text */
+/* eslint-disable react/jsx-no-comment-textnodes */
 import React, { useCallback, useState, useEffect, useMemo, useRef } from "react";
 // import { BrowserRouter, Routes, Route } from "react-router-dom";
 
@@ -6,7 +8,7 @@ import './Crud.css'
 
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
-import { Link as MuiLink, Typography, useMediaQuery, useTheme, DialogContentText } from '@mui/material';
+import { Link as MuiLink, Typography, useMediaQuery, useTheme, DialogContentText, CircularProgress } from '@mui/material';
 import MaterialReactTable from 'material-react-table';
 import {
     Box,
@@ -27,18 +29,20 @@ import { Delete, Edit, Visibility } from '@mui/icons-material';
 const editUserDetail = (userData, rowUpdate, toggleForm, setDataToUpdate, addOrEdit) => {
     addOrEdit.current = 0;
     toggleForm(1);
-    setDataToUpdate(userData);
-    
+    let selectedImage = userData.profilePic?{selectedImage: `${process.env.REACT_APP_BASE_URL}${userData.profilePic}`}:{}
+    let skills = !Array.isArray(userData.skills)  ? userData.skills.split(',') : userData.skills
+    setDataToUpdate({ ...userData, skills: skills,  ...selectedImage});
+
 }
 
 
-const deleteTableDataAPI = async (id) =>{
+const deleteTableDataAPI = async (id) => {
     const url = `${process.env.REACT_APP_BASE_URL}crud/${id}`
-    const response = await fetch(url,{
-        method:'DELETE',
-    }).then(e=>e.json());
+    const response = await fetch(url, {
+        method: 'DELETE',
+    }).then(e => e.json());
     return response;
-} 
+}
 
 function DeleteRow(props) {
     const [open, setOpen] = React.useState(false);
@@ -55,26 +59,26 @@ function DeleteRow(props) {
 
     const deleteTableData = async () => {
         const response = await deleteTableDataAPI(props.row.original.id);
-        if( response.status){
-            
+        if (response.status) {
+
             props.tableData.splice(props.row.index, 1);
             props.setTableData([...props.tableData]);
             setOpen(false);
             toast.success(`${response.message}`, {
                 position: toast.POSITION.TOP_RIGHT
             });
-        }else{
+        } else {
             toast.error(`${response.message}`, {
                 position: toast.POSITION.TOP_RIGHT
             });
         }
-        
+
     }
 
     return (
         <div>
             <Tooltip arrow placement="right" title="Delete">
-                <IconButton color="error" onClick={()=>handleClickOpen()} > 
+                <IconButton color="error" onClick={() => handleClickOpen()} >
                     <Delete />
                 </IconButton>
             </Tooltip>
@@ -96,7 +100,7 @@ function DeleteRow(props) {
                     <Button autoFocus onClick={handleClose}>
                         cancel
                     </Button>
-                    <Button onClick={()=>{deleteTableData()}} autoFocus>
+                    <Button onClick={() => { deleteTableData() }} autoFocus>
                         Yes
                     </Button>
                 </DialogActions>
@@ -160,8 +164,8 @@ const ShowTable = (props) => {
             enablePagination={true}
             enableBottomToolbar={true}
             renderDetailPanel={({ row }) => (
-                <Typography color={row.original.description ? 'secondary.main' : 'text.secondary'}>
-                    {row.original.description || 'No Description Provided... Yet...'}
+                <Typography color={row.original.detail ? 'secondary.main' : 'text.secondary'}>
+                    {row.original.detail || 'No Description Provided... Yet...'}
                 </Typography>
             )}
             renderRowActions={({ row, table }) => (
@@ -171,7 +175,7 @@ const ShowTable = (props) => {
                             <Edit />
                         </IconButton>
                     </Tooltip>
-                    <DeleteRow row={row} tableData={tableData} setTableData = {setTableData}  />
+                    <DeleteRow row={row} tableData={tableData} setTableData={setTableData} />
                     <Tooltip arrow placement="right" title="View">
                         <IconButton color="error" >
                             <Visibility />
@@ -179,7 +183,7 @@ const ShowTable = (props) => {
                     </Tooltip>
                 </Box>
             )}
-        />    
+        />
     );
 
 }
@@ -209,24 +213,27 @@ function FormError(props) {
 
 
 async function postData(url = '', data = {}) {
-    console.log(`datatatatat--------0000000`, data);
+    let formData = new FormData();
+    Object.keys(data).forEach(element => {
+        
+        if(element!=='selectedImage'){
+            formData.append(element, data[element]);
+        }
+    });
+
     let method = data.id ? 'PATCH' : 'POST';
-    console.log(`method------------`, method);
     const response = await fetch(url, {
-        method: method, // *GET, POST, PUT, DELETE, etc.
-        mode: 'cors', // no-cors, *cors, same-origin
-        cache: 'no-cache', // *default, no-cache, reload, force-cache, only-if-cached
-        credentials: 'same-origin', // include, *same-origin, omit
-        headers: {
-            'Content-Type': 'application/json'
-            // 'Content-Type': 'application/x-www-form-urlencoded',
-        },
-        redirect: 'follow', // manual, *follow, error
-        referrerPolicy: 'no-referrer', // no-referrer, *no-referrer-when-downgrade, origin, origin-when-cross-origin, same-origin, strict-origin, strict-origin-when-cross-origin, unsafe-url
-        body: JSON.stringify(data) // body data type must match "Content-Type" header
+        method: method,
+        mode: 'cors',
+        cache: 'no-cache',
+        credentials: 'same-origin',
+        headers: {},
+        redirect: 'follow',
+        referrerPolicy: 'no-referrer',
+        body: formData
     }).then(e => { return e.json() });
 
-    return response; // parses JSON response into native JavaScript objects
+    return response;
 }
 
 
@@ -241,7 +248,6 @@ const getData = async () => {
                 // 'Content-Type': 'application/x-www-form-urlencoded',
             }
         }).then(data => { return data.json() });
-        console.log('------------===========response', response)
     } catch (error) {
         console.log(`ERROR: ${error}`)
     }
@@ -252,7 +258,8 @@ const genderOption = {
     options: {
         m: "Male",
         f: "Female",
-        o: "Other"
+        o: "Other",
+        t: 'trance-gender'
     },
     required: true,
 }
@@ -333,6 +340,8 @@ const FormAlert = (props) => {
 function AddUserForm(props) {
     const [field, setField] = useState({});
     const [showError, setshowError] = useState(0)
+    let showLoader = useRef();
+    
     if (props.dataToUpdate) {
         // eslint-disable-next-line react-hooks/rules-of-hooks
         useEffect(() => {
@@ -341,18 +350,17 @@ function AddUserForm(props) {
     }
 
     function HandleChange(e) {
-        console.log(e.target, e.target.name, e.target.value);
         let name = e.target.name;
         let value = e.target.value;
-
         setField({ ...field, [name]: value });
     }
 
     const onImageChange = (e) => {
+        console.log('for images -------',e.target.result);
         if (e.target.files && e.target.files[0]) {
             let name = e.target.name;
-            let value = URL.createObjectURL(e.target.files[0]);
-            setField({ ...field, [name]: value });
+            let value = e.target.files[0];
+            setField({ ...field, [name]: value, selectedImage: URL.createObjectURL(e.target.files[0])});
         } else {
             return '';
         }
@@ -363,7 +371,7 @@ function AddUserForm(props) {
         let name = e.target.name;
         let value = e.target.value;
         let skills = new Set(field[name]);
-
+        console.log(`skills--------`, skills, field[name]);
         if (e.target.checked) {
             skills.add(value);
         } else {
@@ -381,7 +389,7 @@ function AddUserForm(props) {
 
     const submitHandler = async (e) => {
         e.preventDefault();
-
+        showLoader.current = true;
         let requiredFieldsFlage = true
 
         for (let i = 0; i < requiredFields.length; i++) {
@@ -397,20 +405,21 @@ function AddUserForm(props) {
         if (requiredFieldsFlage) {
             let url = `${process.env.REACT_APP_BASE_URL}crud`;
             const response = await postData(url, field);
-            if(response.status){
+            if (response.status) {
                 props.rowUpdate(1);
                 props.toggleForm(0);
                 toast.success(response.message);
-            }else{
+            } else {
                 toast.error(response.message);
             }
-            
-        }
 
+        }
+        showLoader.current = false;
+        console.log(`helloooooooo99999999999`,showLoader.current )
     }
 
-    return (<form className="row g-2 needs-validation" onSubmit={(e) => { submitHandler(e) }} novalidate>
-        <FormAlert showError={showError} />
+    return (<form className="row g-2 needs-validation" onSubmit={(e) => { submitHandler(e) }}>
+        <FormAlert showError={showError} encType="multipart/form-data" />
         {Object.keys(inputFlieds.options).map(e => {
             let formError = inputFlieds.options[e].required ? <FormError name={inputFlieds.options[e].title} fieldName={e} fields={field} /> : '';
             return (
@@ -467,16 +476,19 @@ function AddUserForm(props) {
 
         <div className="col-md-12">
             <lable className="form-label">Detail:</lable><br />
-            <textarea cols="42" placeholder="Enter you detail"></textarea>
+            <textarea cols="42" placeholder="Enter you detail" name="detail" onBlur={(e) => HandleChange(e)} value={field.detail}></textarea>
         </div>
         <div className="col-md-12">
             <lable className="form-label">Profile Picture</lable><br />
             <input type="file" name="profilePic" onChange={(e) => { onImageChange(e) }} /><br /><br />
-            <img src={field.profilePic} width="200px" height="200px" />
+            <img src={field.selectedImage} width="200px" height="200px" />
         </div>
 
         <div className="col-12">
-            <button className="btn btn-primary" type="submit">Submit form</button>
+            <button className="btn btn-primary" type="submit">
+                { showLoader.current ? <CircularProgress color="secondary" /> :<></> }
+                Submit form{showLoader.current}
+            </button>
         </div>
     </form>)
 }
@@ -489,19 +501,19 @@ function ShowButton(props) {
     return (
         <>
             <Stack direction="pt-3" gap={2}>
-                <Button as="a" variant="primary"  onClick={() => { setDataToUpdate({}); addOrEdit.current=1;toggleForm(true) }}>
+                <Button as="a" variant="primary" onClick={() => { setDataToUpdate({}); addOrEdit.current = 1; toggleForm(true) }}>
                     Add User
                 </Button>
             </Stack>
             <Modal show={isShow}>
                 <Modal.Header closeButton onClick={() => { toggleForm(false) }}>
-                    <Modal.Title >{addOrEdit.current?'Add Data':'Edit Data'}</Modal.Title>
+                    <Modal.Title >{addOrEdit.current ? 'Add Data' : 'Edit Data'}</Modal.Title>
                 </Modal.Header>
                 <Modal.Body>
                     <div className="container">
                         <div className="row">
                             <div className="col">
-                                <AddUserForm toggleForm = {toggleForm} rowUpdate={rowUpdate} dataToUpdate={dataToUpdate} />
+                                <AddUserForm toggleForm={toggleForm} rowUpdate={rowUpdate} dataToUpdate={dataToUpdate} />
                             </div>
                         </div>
                     </div>
