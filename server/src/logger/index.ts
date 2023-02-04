@@ -19,7 +19,7 @@ class Logger {
       level: 'info',
       format: combine(
         timestamp(),
-        prettyPrint(),
+        prettyPrint()
         // eslint-disable-next-line @typescript-eslint/restrict-template-expressions
         // printf((info: { level: any }) => { return `${info.level}: ${info.message}` })
       ),
